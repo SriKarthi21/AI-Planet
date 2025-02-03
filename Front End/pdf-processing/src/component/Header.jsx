@@ -7,18 +7,57 @@ const Header = () => {
 
   const [fileName, setFileName] = useState('');
   const [isUpload, setIsUpload] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [message, setMessage] = useState('');
 
 
   const handleFileChange = (event) => {
     const file = event.target.files[0];
+    setSelectedFile(event.target.files[0])
     if (file) {
       setFileName(file.name);
       setIsUpload(true);
+      handleSubmit(event);
     } else {
       setFileName('');
     }
   };
+  const handleSubmit = async (event) => {
+    console.log("submit method called");
+    console.log(event);
+    event.preventDefault();
 
+    if (!selectedFile) {
+      setMessage('Please select a PDF file.');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('pdf_file', selectedFile, selectedFile.name); // 'pdf_file' is the key FastAPI expects
+
+    try {
+      console.log("post method called");
+      const response = await fetch('http://127.0.0.1:8000/api/upload', { // Your FastAPI endpoint
+        
+        method: 'POST',
+        body: formData, // Important: Send FormData
+      });
+
+      if (response.ok) {
+        setMessage('PDF uploaded successfully!');
+        // Optionally handle successful response (e.g., display a confirmation)
+        const data = await response.json(); // If the server sends back JSON
+        console.log(data);
+      } else {
+        const errorData = await response.json(); // Try to get error details from the server
+        setMessage(`Upload failed: ${errorData.detail || response.statusText}`); // Display a more user-friendly error
+        console.error('Server error:', errorData);
+      }
+    } catch (error) {
+      setMessage('An error occurred during upload.');
+      console.error('Client-side error:', error);
+    }
+  };
 
   return (
     <>
@@ -60,7 +99,9 @@ const Header = () => {
                 color: '#333',
                 alignItems: "center"
               }}
-            ><AddCircleOutlineIcon />
+              
+            ><button onClick={handleSubmit}> send file</button>
+              <AddCircleOutlineIcon />
               <span > Upload PDF</span>
             </label>
           </>
